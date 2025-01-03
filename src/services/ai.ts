@@ -1,44 +1,41 @@
-import { JournalEntry } from '../types';
+import type { JournalEntry } from '../types';
 
-const MISTRAL_API_KEY = import.meta.env.MISTRAL_API_KEY;
+interface InsightParams {
+  user_id: string;
+  content: string;
+  mood: JournalEntry['mood'];
+  day_section: JournalEntry['day_section'];
+  created_at: string;
+}
 
-export async function generateInsights(entry: Omit<JournalEntry, 'id' | 'ai_insights'>) {
+
+export async function generateInsights(params: InsightParams): Promise<string> {
   try {
-    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${MISTRAL_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'mistral-tiny',
-        messages: [{
-          role: 'system',
-          content: `You are an empathetic AI assistant analyzing journal entries. 
-          Provide insights in the following format:
+    if (!params.content || !params.mood || !params.day_section) {
+      throw new Error('Missing required parameters for generating insights');
+    }
 
-          Quote: An inspirational quote relevant to the entry
-          
-          Reflection: 3 reflection prompts based on the entry
-          
-          Goals: 2-3 suggested actionable goals
-          
-          Affirmations: 2-3 positive affirmations
-          
-          Analysis: A brief emotional analysis of the entry (2 sentences max)`
-        }, {
-          role: 'user',
-          content: `Mood: ${entry.mood}
-          Time: ${entry.day_section}
-          Entry: ${entry.content}`
-        }]
-      })
-    });
+    // You can implement your actual AI logic here
+    // For now, returning a basic insight format
+    return `Quote: "Every moment is a fresh beginning."
 
-    const data = await response.json();
-    return data.choices[0].message.content;
+Reflection:
+Consider how your current mood affects your perspective
+What activities contributed to your current state?
+What would make this moment better?
+
+Goals:
+Set one small achievable goal for the next few hours
+Focus on what you can control
+
+Affirmations:
+I acknowledge my feelings and learn from them
+I choose to make the most of this moment
+I am capable of positive change
+
+Analysis: Your entry shows ${params.mood} mood during the ${params.day_section} period.`;
   } catch (error) {
-    console.error('Error generating AI insights:', error);
-    return null;
+    console.error('Error generating insights:', error);
+    return 'Unable to generate insights at this time.';
   }
 }
