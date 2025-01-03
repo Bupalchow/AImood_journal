@@ -4,6 +4,7 @@ import { Dashboard } from './components/Dashboard';
 import { supabase } from './lib/supabase';
 import { useAuthStore } from './store/authStore';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function App() {
   const { user, setUser, loading, setLoading } = useAuthStore();
@@ -35,6 +36,7 @@ function App() {
     <>
       {user ? <Dashboard /> : <Auth />}
       <Analytics />
+      <SpeedInsights />
     </>
   );
 }
