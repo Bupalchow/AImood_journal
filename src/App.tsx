@@ -3,6 +3,7 @@ import { Auth } from './components/Auth';
 import { Dashboard } from './components/Dashboard';
 import { supabase } from './lib/supabase';
 import { useAuthStore } from './store/authStore';
+import { Analytics } from '@vercel/analytics/react';
 
 function App() {
   const { user, setUser, loading, setLoading } = useAuthStore();
@@ -30,7 +31,12 @@ function App() {
     );
   }
 
-  return user ? <Dashboard /> : <Auth />;
+  return (
+    <>
+      {user ? <Dashboard /> : <Auth />}
+      <Analytics />
+    </>
+  );
 }
 
 export default App;
