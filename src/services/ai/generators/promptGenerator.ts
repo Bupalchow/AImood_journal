@@ -11,7 +11,7 @@ export async function generateReflectionPrompts(analysis: EmotionAnalysis): Prom
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${import.meta.env.VITE_MISTRAL_API_KEY}`
+      'Authorization': `Bearer ${import.meta.env.MISTRAL_API_KEY}`
     },
     body: JSON.stringify({
       model: 'mistral-tiny',

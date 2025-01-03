@@ -1,6 +1,6 @@
 import { JournalEntry } from '../types';
 
-const MISTRAL_API_KEY = import.meta.env.VITE_MISTRAL_API_KEY;
+const MISTRAL_API_KEY = import.meta.env.MISTRAL_API_KEY;
 
 export async function generateInsights(entry: Omit<JournalEntry, 'id' | 'ai_insights'>) {
   try {
