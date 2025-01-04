@@ -44,6 +44,7 @@ export function Dashboard() {
     if (!user) return;
 
     try {
+      setLoading(true);
       const insights = await generateInsights({
         user_id: user.id,
         content,
@@ -51,8 +52,6 @@ export function Dashboard() {
         day_section: daySection,
         created_at: new Date().toISOString()
       });
-
-      if (!insights) throw new Error('Failed to generate insights');
 
       const { error } = await supabase.from('journal_entries').insert([
         {
@@ -68,7 +67,9 @@ export function Dashboard() {
       await loadEntries();
     } catch (error) {
       console.error('Error saving entry:', error);
-      // You might want to show an error message to the user here
+      // Add toast notification here if you want
+    } finally {
+      setLoading(false);
     }
   };
 
