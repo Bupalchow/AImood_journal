@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { format } from 'date-fns';
+import { format, isEqual, parseISO } from 'date-fns';
 import type { JournalEntry, DaySection } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
@@ -15,6 +15,7 @@ export function Dashboard() {
   const { user } = useAuthStore();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   useEffect(() => {
     if (user) {
@@ -71,6 +72,10 @@ export function Dashboard() {
     }
   };
 
+  const filteredEntries = entries.filter(entry => 
+    isEqual(parseISO(entry.created_at.split('T')[0]), selectedDate)
+  );
+
   const userEmail = user?.email?.split('@')[0] || 'User';
 
   return (
@@ -85,21 +90,29 @@ export function Dashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <MoodStats entries={entries} />
-          <CalendarView entries={entries} />
+          <CalendarView 
+            entries={entries} 
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+          />
         </div>
 
         <JournalEntryComponent onSave={handleSaveEntry} />
 
         <section className="space-y-4">
-          <h2 className="text-2xl font-semibold">Recent Entries</h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-semibold">
+              Entries for {format(selectedDate, 'MMMM d, yyyy')}
+            </h2>
+          </div>
 
           {loading ? (
             <div className="text-center py-8">Loading...</div>
-          ) : entries.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No entries yet</div>
+          ) : filteredEntries.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">No entries for this date</div>
           ) : (
             <div className="space-y-4">
-              {entries.map((entry) => {
+              {filteredEntries.map((entry) => {
                 const moodConfig = moodConfigs[entry.mood];
                 const sectionConfig = daySectionConfigs[entry.day_section || 'morning'];
                 

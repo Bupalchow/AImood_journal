@@ -1,4 +1,4 @@
-import { format, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isEqual } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { JournalEntry} from '../types';
 import { moodConfigs } from '../config/moods';
@@ -36,9 +36,11 @@ const getAverageMoodColor = (entries: JournalEntry[]) => {
 
 interface Props {
   entries: JournalEntry[];
+  selectedDate: Date;
+  onSelectDate: (date: Date) => void;
 }
 
-export function CalendarView({ entries }: Props) {
+export function CalendarView({ entries, selectedDate, onSelectDate }: Props) {
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
@@ -80,15 +82,18 @@ export function CalendarView({ entries }: Props) {
         {days.map(day => {
           const dateKey = format(day, 'yyyy-MM-dd');
           const dayEntries = entriesByDate[dateKey];
+          const isSelected = isEqual(day, selectedDate);
           
           return (
             <div
               key={dateKey}
-              className="aspect-square p-1"
+              className="aspect-square p-1 cursor-pointer"
+              onClick={() => onSelectDate(day)}
             >
               <div 
                 className={`w-full h-full rounded-full flex items-center justify-center text-sm
-                  ${dayEntries ? 'text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+                  ${dayEntries ? 'text-white' : 'text-gray-700 hover:bg-gray-50'}
+                  ${isSelected ? 'ring-2 ring-purple-500 ring-offset-2' : ''}`}
                 style={getDayMoodStyle(dayEntries || [])}
                 title={dayEntries?.map(e => `${e.day_section}: ${moodConfigs[e.mood].label}`).join('\n')}
               >
