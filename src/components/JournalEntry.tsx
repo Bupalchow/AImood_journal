@@ -18,8 +18,12 @@ export function JournalEntryComponent({ onSave }: Props) {
     setLoading(true);
     try {
       await onSave(content, mood, daySection);
+      // Only clear form on successful save
       setContent('');
       setMood('neutral');
+    } catch (error) {
+      // Don't clear form on error
+      console.error('Failed to save entry:', error);
     } finally {
       setLoading(false);
     }

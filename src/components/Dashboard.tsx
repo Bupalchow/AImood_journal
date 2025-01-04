@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { format, isEqual, parseISO } from 'date-fns';
+import { format, isEqual, parseISO, startOfDay } from 'date-fns';
 import type { JournalEntry, DaySection } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
@@ -10,12 +10,15 @@ import { AIInsights } from './AIInsights';
 import { moodConfigs } from '../config/moods';
 import { daySectionConfigs } from '../config/daySections';
 import { generateInsights } from '../services/ai';
+import { MistralKeyModal } from './MistralKeyModal';
 
 export function Dashboard() {
   const { user } = useAuthStore();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
+  const [showApiModal, setShowApiModal] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -42,6 +45,7 @@ export function Dashboard() {
 
   const handleSaveEntry = async (content: string, mood: JournalEntry['mood'], daySection: DaySection) => {
     if (!user) return;
+    setApiError(null);
 
     try {
       setLoading(true);
@@ -53,21 +57,28 @@ export function Dashboard() {
         created_at: new Date().toISOString()
       });
 
-      const { error } = await supabase.from('journal_entries').insert([
-        {
-          user_id: user.id,
-          content,
-          mood,
-          day_section: daySection,
-          ai_insights: insights
-        },
-      ]);
+      const { error } = await supabase.from('journal_entries').insert([{
+        user_id: user.id,
+        content,
+        mood,
+        day_section: daySection,
+        ai_insights: insights
+      }]);
 
       if (error) throw error;
       await loadEntries();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving entry:', error);
-      // Add toast notification here if you want
+      if (error.message === 'API_RATE_LIMIT') {
+        setApiError('AI service is currently overloaded. Consider using your own API key for better reliability.');
+        setShowApiModal(true);
+      } else if (error.message === 'INVALID_API_KEY') {
+        setApiError('Invalid API key. Please check your API key configuration.');
+        setShowApiModal(true);
+      } else {
+        setApiError('Failed to generate AI insights. Please try again later.');
+      }
+      throw error; // Propagate error to prevent form clearing
     } finally {
       setLoading(false);
     }
@@ -88,6 +99,25 @@ export function Dashboard() {
           </h1>
           <p className="text-gray-600 mt-2">Track your thoughts and emotions throughout the day</p>
         </header>
+
+        {apiError && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <span className="text-yellow-400">⚠️</span>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">{apiError}</p>
+                <button
+                  onClick={() => setShowApiModal(true)}
+                  className="text-sm font-medium text-yellow-700 hover:text-yellow-600 underline"
+                >
+                  Configure API Key
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <MoodStats entries={entries} />
@@ -153,6 +183,11 @@ export function Dashboard() {
             </div>
           )}
         </section>
+
+        <MistralKeyModal
+          isOpen={showApiModal}
+          onClose={() => setShowApiModal(false)}
+        />
       </div>
     </div>
   );

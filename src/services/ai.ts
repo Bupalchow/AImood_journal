@@ -8,6 +8,13 @@ interface InsightParams {
   created_at: string;
 }
 
+interface APIError {
+  error: {
+    code: string;
+    message: string;
+  };
+}
+
 const MISTRAL_API_ENDPOINT = 'https://api.mistral.ai/v1/chat/completions';
 
 const systemPrompt = `You are an empathetic AI journaling assistant. Analyze the journal entry and provide:
@@ -19,12 +26,18 @@ const systemPrompt = `You are an empathetic AI journaling assistant. Analyze the
 
 Keep responses concise and practical. Focus on growth and emotional well-being.`;
 
+export function getUserApiKey(): string | null {
+  return localStorage.getItem('user_mistral_api_key');
+}
+
 export async function generateInsights(params: InsightParams): Promise<string> {
   if (!params.content || !params.mood || !params.day_section) {
     throw new Error('Missing required parameters for generating insights');
   }
 
-  const apiKey = import.meta.env.VITE_MISTRAL_API_KEY;
+  const userApiKey = getUserApiKey();
+  const apiKey = userApiKey || import.meta.env.VITE_MISTRAL_API_KEY;
+
   if (!apiKey) {
     throw new Error('Missing Mistral API key');
   }
@@ -60,9 +73,17 @@ Analysis: (brief emotional insight)`;
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Mistral API Error:', errorData);
-      throw new Error(`API request failed: ${response.status}`);
+      const errorData = await response.json() as APIError;
+      
+      if (response.status === 401) {
+        throw new Error('INVALID_API_KEY');
+      }
+      
+      if (response.status === 429 || errorData.error?.message?.includes('rate limit')) {
+        throw new Error('API_RATE_LIMIT');
+      }
+      
+      throw new Error(errorData.error?.message || `API request failed: ${response.status}`);
     }
 
     const data = await response.json();

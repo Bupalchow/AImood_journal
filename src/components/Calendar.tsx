@@ -1,7 +1,8 @@
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isEqual } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isEqual, startOfDay } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { JournalEntry} from '../types';
 import { moodConfigs } from '../config/moods';
+import { useEffect } from 'react';
 
 // Add these helper functions at the top
 const hexToRgb = (hex: string) => {
@@ -41,7 +42,15 @@ interface Props {
 }
 
 export function CalendarView({ entries, selectedDate, onSelectDate }: Props) {
-  const now = new Date();
+  const now = startOfDay(new Date()); // Normalize today's date
+
+  // Update effect to run on component mount and when entries change
+  useEffect(() => {
+    if (!isEqual(selectedDate, now)) {
+      onSelectDate(now);
+    }
+  }, [entries]); // Run when entries change to ensure date is selected after data loads
+
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
